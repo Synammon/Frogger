@@ -67,7 +67,10 @@ namespace Frogger
                 Content.Load<Texture2D>("Turtle2"),
             };
 
-            Field = new Field(this, Content.Load<Texture2D>("grass"), Content.Load<Texture2D>("water"), Content.Load<Texture2D>("homes"), Content.Load<Texture2D>("FrogHome"), cars, logs, turtles, _spriteBatch);
+            Texture2D snakeLeftTexture = Content.Load<Texture2D>("snakeleft");
+            Texture2D snakeRightTexture = Content.Load<Texture2D>("snakeright");
+
+            Field = new Field(this, Content.Load<Texture2D>("grass"), Content.Load<Texture2D>("water"), Content.Load<Texture2D>("homes"), Content.Load<Texture2D>("FrogHome"), cars, logs, turtles, snakeLeftTexture, snakeRightTexture, _spriteBatch);
             Field.Initialize(this);
 
             GameFont = Content.Load<SpriteFont>("GameFont");
@@ -84,7 +87,7 @@ namespace Frogger
             {
                 if (Xin.CheckKeyPressed(Keys.R))
                 {
-                    Lives = 3;
+                    Lives = 7;
                     Score = 0;
                     Frog.Reset();
                     Field.Initialize(this);
@@ -93,7 +96,10 @@ namespace Frogger
             else
             {
                 Field.Update(gameTime);
-                Frog.Update(gameTime);
+                if (!Field.FrogReset)
+                {
+                    Frog.Update(gameTime);
+                }
             }
 
             Window.Title = "Frogger - Score: " + Score + " Lives: " + Lives;
@@ -112,7 +118,10 @@ namespace Frogger
             if (Lives > 0)
             {
                 Field.Draw(gameTime);
-                Frog.Draw(gameTime);
+                if (!Field.FrogReset)
+                {
+                    Frog.Draw(gameTime);
+                }
             }
             else
             {

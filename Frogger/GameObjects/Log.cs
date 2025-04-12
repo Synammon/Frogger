@@ -41,12 +41,13 @@ namespace Frogger.GameObjects
             }
         }
 
-        public Log(Game game, List<Texture2D> texture, Vector2 pos, int midSections, SpriteBatch sb)
+        public Log(Game game, List<Texture2D> texture, Vector2 pos, int midSections, int speed, SpriteBatch sb)
             : base(game)
         {
             _textures = texture;
             _position = pos;
             _midSections = midSections;
+            _speed = speed;
             _spriteBatch = sb;
         }
 

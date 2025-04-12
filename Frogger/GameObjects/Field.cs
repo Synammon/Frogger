@@ -2,8 +2,10 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Frogger.GameObjects
@@ -15,17 +17,30 @@ namespace Frogger.GameObjects
         private Texture2D _water;
         private Texture2D _homes;
         private Texture2D _frogHome;
+        private Texture2D _snakeLeftTexture;
+        private Texture2D _snakeRightTexture;
         private List<Car> _cars;
         private List<Log> _logs;
         private List<Turtle> _turtles;
+        private List<Snake> _snakes;
         private List<Texture2D> _carTextures;
         private List<Texture2D> _logTextures;
         private List<Texture2D> _turtleTextures;
         private SpriteBatch _spriteBatch;
         private List<Rectangle> _homeAreas;
         private List<bool> _homeOccupied = new List<bool> { false, false, false, false, false };
-
+        private Levels _levels = new();
+        private int _currentLevel;
         private TimeSpan FieldTimer;
+        private TimeSpan _nextTimer;
+        private bool _frogReset = false;
+        private Game _game;
+
+        public bool FrogReset
+        {
+            get { return _frogReset; }
+            set { _frogReset = value; }
+        }
 
         public Rectangle WaterArea
         {
@@ -35,20 +50,39 @@ namespace Frogger.GameObjects
             }
         }
 
-        public Field(Game game, Texture2D grass, Texture2D water, Texture2D homes, Texture2D frogHome, List<Texture2D> carTextures, List<Texture2D> logTextures, List<Texture2D> turtleTextures,SpriteBatch spriteBatch)
+        public Field(Game game, Texture2D grass, Texture2D water, Texture2D homes, Texture2D frogHome, List<Texture2D> carTextures, List<Texture2D> logTextures, List<Texture2D> turtleTextures, Texture2D snakeLeftTexture, Texture2D snakeRightTexture, SpriteBatch spriteBatch)
         {
+            _game = game;
             _grass = grass;
             _water = water;
             _homes = homes;
+            _snakeLeftTexture = snakeLeftTexture;
+            _snakeRightTexture = snakeRightTexture;
             _cars = new List<Car>();
             _logs = new List<Log>();
             _turtles = new List<Turtle>();
+            _snakes = new List<Snake>();
             _homeAreas = new List<Rectangle>();
             _frogHome = frogHome;
             _spriteBatch = spriteBatch;
             _carTextures = carTextures;
             _logTextures = logTextures;
             _turtleTextures = turtleTextures;
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true,
+                IncludeFields = true
+            };
+
+            string json = JsonSerializer.Serialize(_levels, options);
+            string fileName = "..\\..\\..\\Content\\Levels.json";
+            File.WriteAllText(fileName, json);
+
+            fileName = "Content\\Levels.json";
+            json = File.ReadAllText(fileName);
+            _levels = JsonSerializer.Deserialize<Levels>(json, options);
         }
 
         public void Initialize(Game game)
@@ -67,109 +101,144 @@ namespace Frogger.GameObjects
                 _homeOccupied[i] = false;
             }
 
+            GenerateLevel();            
+        }
+
+        public void GenerateLevel()
+        {
             _cars.Clear();
-            _cars.Add(new Car(game, _carTextures[0], new Vector2(Game1.SCREEN_WIDTH - TileSize, 12 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[1], new Vector2(0, 11 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[2], new Vector2(Game1.SCREEN_WIDTH - TileSize, 10 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[3], new Vector2(0, 9 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[4], new Vector2(Game1.SCREEN_WIDTH - TileSize * 3, 8 * TileSize), Direction.Left, new Point(TileSize * 3, TileSize), _spriteBatch));
 
-            _cars.Add(new Car(game, _carTextures[0], new Vector2(Game1.SCREEN_WIDTH - TileSize * 3, 12 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[1], new Vector2(0 + TileSize * 4, 11 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[2], new Vector2(Game1.SCREEN_WIDTH - TileSize * 3, 10 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[3], new Vector2(0 + TileSize * 10, 9 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[4], new Vector2(Game1.SCREEN_WIDTH - TileSize * 3 * 3, 8 * TileSize), Direction.Left, new Point(TileSize * 3, TileSize), _spriteBatch));
+            foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowOne)
+            {
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+            }
 
-            _cars.Add(new Car(game, _carTextures[0], new Vector2(Game1.SCREEN_WIDTH - TileSize * 2 * 4, 12 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[1], new Vector2(0 + TileSize * 9, 11 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[2], new Vector2(Game1.SCREEN_WIDTH - TileSize * 7, 10 * TileSize), Direction.Left, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[3], new Vector2(0 + TileSize * 5, 9 * TileSize), Direction.Right, new Point(TileSize, TileSize), _spriteBatch));
-            _cars.Add(new Car(game, _carTextures[4], new Vector2(Game1.SCREEN_WIDTH - TileSize * 3 * 2, 8 * TileSize), Direction.Left, new Point(TileSize * 3, TileSize), _spriteBatch));
+            foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowTwo)
+            {
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+            }
+
+            foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowThree)
+            {
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+            }
+
+            foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowFour)
+            {
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+            }
+
+            foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowFive)
+            {
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+            }
 
             _logs.Clear();
-            _logs.Add(new Log(game, _logTextures, new Vector2(0, 2 * TileSize), 1, _spriteBatch));
-            _logs[0].Speed = 128f;
-            _logs.Add(new Log(game, _logTextures, new Vector2(TileSize * 5, 2 * TileSize), 1, _spriteBatch));
-            _logs[1].Speed = 128f;
-            _logs.Add(new Log(game, _logTextures, new Vector2(TileSize * 10, 2 * TileSize), 1, _spriteBatch));
-            _logs[2].Speed = 128f;
 
-            _logs.Add(new Log(game, _logTextures, new Vector2(0, 4 * TileSize), 4, _spriteBatch));
-            _logs[3].Speed = 160f;
-            _logs.Add(new Log(game, _logTextures, new Vector2(TileSize * 9, 4 * TileSize), 4, _spriteBatch));
-            _logs[4].Speed = 160f;
+            foreach (LogDef log in _levels.LevelDefs[_currentLevel].RowEight)
+            {
+                _logs.Add(new Log(_game, _logTextures, new Vector2(log.Position.X, log.Position.Y), log.MidSections, log.Speed, _spriteBatch));
+            }
 
-            _logs.Add(new Log(game, _logTextures, new Vector2(0, 5 * TileSize), 2, _spriteBatch));
-            _logs[5].Speed = 96f;
-            _logs.Add(new Log(game, _logTextures, new Vector2(TileSize * 6, 5 * TileSize), 2, _spriteBatch));
-            _logs[6].Speed = 96f;
-            _logs.Add(new Log(game, _logTextures, new Vector2(TileSize * 12, 5 * TileSize), 2, _spriteBatch));
-            _logs[7].Speed = 96f;
+            foreach (LogDef log in _levels.LevelDefs[_currentLevel].RowNine)
+            {
+                _logs.Add(new Log(_game, _logTextures, new Vector2(log.Position.X, log.Position.Y), log.MidSections, log.Speed, _spriteBatch));
+            }
+
+            foreach (LogDef log in _levels.LevelDefs[_currentLevel].RowEleven)
+            {
+                _logs.Add(new Log(_game, _logTextures, new Vector2(log.Position.X, log.Position.Y), log.MidSections, log.Speed, _spriteBatch));
+            }
 
             _turtles.Clear();
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(2 * TileSize, 6 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(3 * TileSize, 6 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(4 * TileSize, 6 * TileSize), _spriteBatch, true));
 
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(6 * TileSize, 6 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(7 * TileSize, 6 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(8 * TileSize, 6 * TileSize), _spriteBatch, false));
+            foreach (TurtleDef turtle in _levels.LevelDefs[_currentLevel].RowSeven)
+            {
+                _turtles.Add(new Turtle(_game, _turtleTextures, new Vector2(turtle.Position.X, turtle.Position.Y), _spriteBatch, turtle.IsDiver));
+            }
 
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(10 * TileSize, 6 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(11 * TileSize, 6 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(12 * TileSize, 6 * TileSize), _spriteBatch, true));
+            foreach (TurtleDef turtle in _levels.LevelDefs[_currentLevel].RowTen)
+            {
+                _turtles.Add(new Turtle(_game, _turtleTextures, new Vector2(turtle.Position.X, turtle.Position.Y), _spriteBatch, turtle.IsDiver));
+            }
 
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(14 * TileSize, 6 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(15 * TileSize, 6 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(16 * TileSize, 6 * TileSize), _spriteBatch, false));
+            _snakes.Clear();
 
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(3 * TileSize, 3 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(4 * TileSize, 3 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(5 * TileSize, 3 * TileSize), _spriteBatch, false));
-
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(8 * TileSize, 3 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(9 * TileSize, 3 * TileSize), _spriteBatch, true));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(10 * TileSize, 3 * TileSize), _spriteBatch, true));
-
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(13 * TileSize, 3 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(14 * TileSize, 3 * TileSize), _spriteBatch, false));
-            _turtles.Add(new Turtle(game, _turtleTextures, new Vector2(15 * TileSize, 3 * TileSize), _spriteBatch, false));
+            foreach (SnakeDef snake in _levels.LevelDefs[_currentLevel].RowSix)
+            {
+                _snakes.Add(new Snake(_game, _snakeLeftTexture, _snakeRightTexture, snake.Position, snake.Direction, snake.Size, _spriteBatch));
+            }
         }
 
         public void Update(GameTime gameTime)
         {
-            FieldTimer -= gameTime.ElapsedGameTime;
+            if (!_frogReset)
+            {
+                FieldTimer -= gameTime.ElapsedGameTime;
+            }
+
+            _nextTimer -= gameTime.ElapsedGameTime;
+
+            if (_nextTimer.TotalSeconds <= 0 && _frogReset)
+            {
+                _nextTimer = TimeSpan.FromSeconds(4f);
+                Game1.Frog.Reset();
+                _frogReset = false;
+            }
 
             if (FieldTimer.TotalSeconds <= 0)
             {
-                Game1.Frog.Reset();
+                _frogReset = true;
+                _nextTimer = TimeSpan.FromSeconds(4f);
                 FieldTimer = TimeSpan.FromSeconds(60f);
                 Game1.Lives--;
             }
 
             for (int i = 0; i < _homeAreas.Count; i++)
             {
-                if (_homeAreas[i].Intersects(Frog.BoundingBox) && !_homeOccupied[i])
+                if (_homeAreas[i].Intersects(Frog.BoundingBox) && !_homeOccupied[i] && !_frogReset)
                 {
-                    Game1.Frog.Reset();
+                    _frogReset = true;
+                    _nextTimer = TimeSpan.FromSeconds(4f);
                     Game1.Score += 100;
 
                     for (int j = 0; j < (int)FieldTimer.TotalSeconds; j++)
                     {
-                        Game1.Score += 20;
+                        Game1.Score += 10;
                     }
 
                     _homeOccupied[i] = true;
                     FieldTimer = TimeSpan.FromSeconds(60f);
                 }
-                else if (_homeAreas[i].Intersects(Frog.BoundingBox) && _homeOccupied[i])
+                else if (_homeAreas[i].Intersects(Frog.BoundingBox) && _homeOccupied[i] && !_frogReset)
                 {
-                    Game1.Frog.Reset();
+                    _frogReset = true;
+                    _nextTimer = TimeSpan.FromSeconds(4f);
                     Game1.Lives--;
                     FieldTimer = TimeSpan.FromSeconds(60f);
                 }
             }
 
+            if (!_homeOccupied.Contains(false) && !_frogReset)
+            {
+                _currentLevel++;
+                _frogReset = true;
+                _nextTimer = TimeSpan.FromSeconds(4f);
+                FieldTimer = TimeSpan.FromSeconds(60f);
+                if (_currentLevel >= _levels.LevelDefs.Count)
+                {
+                    _currentLevel = 0;
+                }
+                else
+                {
+                    GenerateLevel();
+                    _homeOccupied.Clear();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        _homeOccupied.Add(false);
+                    }
+                }
+            }
             foreach (var car in _cars)
             {
                 car.Update(gameTime);
@@ -189,9 +258,10 @@ namespace Frogger.GameObjects
                     }
                 }
 
-                if (car.BoundingBox.Intersects(Frog.BoundingBox))
+                if (car.BoundingBox.Intersects(Frog.BoundingBox) && !_frogReset)
                 {
-                    Game1.Frog.Reset();
+                    _frogReset = true;
+                    _nextTimer = TimeSpan.FromSeconds(4f);
                     Game1.Lives--;
                     FieldTimer = TimeSpan.FromSeconds(60f);
                 }
@@ -205,6 +275,18 @@ namespace Frogger.GameObjects
             foreach (var turtle in _turtles)
             {
                 turtle.Update(gameTime);
+            }
+
+            foreach (var snake in _snakes)
+            {
+                snake.Update(gameTime);
+                if (snake.BoundingBox.Intersects(Frog.BoundingBox) && !_frogReset)
+                {
+                    _frogReset = true;
+                    _nextTimer = TimeSpan.FromSeconds(4f);
+                    Game1.Lives--;
+                    FieldTimer = TimeSpan.FromSeconds(60f);
+                }
             }
 
             if (Frog.BoundingBox.Intersects(WaterArea))// && !Frog.Moving)
@@ -231,9 +313,10 @@ namespace Frogger.GameObjects
                         }
                     }
                 }
-                if (!onLog)
+                if (!onLog && !_frogReset)
                 {
-                    Game1.Frog.Reset();
+                    _frogReset = true;
+                    _nextTimer = TimeSpan.FromSeconds(4f);
                     FieldTimer = TimeSpan.FromSeconds(60f);
                     Game1.Lives--;
                 }
@@ -267,6 +350,11 @@ namespace Frogger.GameObjects
             foreach (var turtle in _turtles)
             {
                 turtle.Draw(gameTime);
+            }
+
+            foreach (var snake in _snakes)
+            {
+                snake.Draw(gameTime);
             }
 
             for (int i = 0; i < _homeOccupied.Count; i++)
