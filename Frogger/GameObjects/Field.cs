@@ -110,27 +110,27 @@ namespace Frogger.GameObjects
 
             foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowOne)
             {
-                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, car.Speed, _spriteBatch));
             }
 
             foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowTwo)
             {
-                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, car.Speed, _spriteBatch));
             }
 
             foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowThree)
             {
-                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, car.Speed, _spriteBatch));
             }
 
             foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowFour)
             {
-                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, car.Speed, _spriteBatch));
             }
 
             foreach (CarDef car in _levels.LevelDefs[_currentLevel].RowFive)
             {
-                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, _spriteBatch));
+                _cars.Add(new Car(_game, _carTextures[car.TextureId], new Vector2(car.Position.X, car.Position.Y), car.Direction, car.Size, car.Speed, _spriteBatch));
             }
 
             _logs.Clear();
@@ -229,14 +229,11 @@ namespace Frogger.GameObjects
                 {
                     _currentLevel = 0;
                 }
-                else
+                GenerateLevel();
+                _homeOccupied.Clear();
+                for (int i = 0; i < 5; i++)
                 {
-                    GenerateLevel();
-                    _homeOccupied.Clear();
-                    for (int i = 0; i < 5; i++)
-                    {
-                        _homeOccupied.Add(false);
-                    }
+                    _homeOccupied.Add(false);
                 }
             }
             foreach (var car in _cars)

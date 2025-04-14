@@ -23,13 +23,14 @@ namespace Frogger.GameObjects
         public Rectangle BoundingBox => new Rectangle((int)_position.X, (int)_position.Y, _size.X, _size.Y);
         public float Speed { get { return _speed; } set { _speed = value; } }
 
-        public Car(Game game, Texture2D texture, Vector2 position, Direction direction, Point size, SpriteBatch spriteBatch) : base(game)
+        public Car(Game game, Texture2D texture, Vector2 position, Direction direction, Point size, int Speed, SpriteBatch spriteBatch) : base(game)
         {
             _texture = texture;
             _position = position;
             _spriteBatch = spriteBatch;
             _direction = direction;
             _size = size;
+            _speed = Speed;
         }
 
         public override void Update(GameTime gameTime)
